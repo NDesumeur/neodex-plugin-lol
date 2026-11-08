@@ -1,7 +1,7 @@
 {
   "id": "neodex.lol",
   "name": "Invocateur",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "author": "NDesumeur",
   "description": "Le tableau de bord de ton compte League of Legends, lu depuis le client ouvert (sans clé) ou avec une clé d'API Riot : classement, maîtrises, historique détaillé par file, analyse de ton jeu (séries, mental, écart face à ton adversaire de voie, résultats par rôle, heure et durée, conseils), statistiques par champion et courbes d'évolution. Aucun mot de passe demandé.",
   "icon": "icon.png",
