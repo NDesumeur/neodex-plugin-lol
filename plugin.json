@@ -10,6 +10,7 @@
   "neobase": ">=4.1.0",
   "type": "app",
   "category": "Jeux",
+  "compatibility": ["windows"],
   "syncMode": "progression",
   "syncInfo": "Ton compte lié et tes parties gardées.",
   "mobile": false,
