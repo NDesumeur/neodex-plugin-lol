@@ -1,9 +1,9 @@
 {
   "pluginId": "neodex.lol",
   "repo": "NDesumeur/neodex-plugin-lol",
-  "version": "1.4.3",
-  "sha256": "930371444ce8171eee7f48fed4c363a9db1c8184f66e30f7cdea61a605b9be3b",
-  "approvedAt": "2026-11-08T14:45:27.483Z",
+  "version": "1.4.4",
+  "sha256": "603b082c2c9d12187dc1c47f8dd341454789ee769ec5e5b86e18f7a29501b2de",
+  "approvedAt": "2026-11-16T16:38:49.315Z",
   "neobase": ">=4.1.0",
-  "signature": "+5vB9l9ZHtZA1Tr8r/COYPViIdR7bRjjMZrzocqvtSdXHOQVtILpW2ZTIkzdnvLgcsAGcFJUdJDMkhCSOBIfCg=="
+  "signature": "qLHFnFYRek4jy0b7iOqbYhicqGifOeCtXKYnyAUS/nrk8AvsKsk0Q8iL5D+VPy3N/BwmKFesH2ns5BQPtTSBDA=="
 }
