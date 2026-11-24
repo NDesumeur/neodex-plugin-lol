@@ -5,7 +5,7 @@ const { execFile } = require('child_process');
 const https = require('https'), fs = require('fs'), path = require('path');
 
 const ALLOWED = [/^\/lol-summoner\/v1\/current-summoner$/, /^\/lol-ranked\/v1\/current-ranked-stats$/, /^\/lol-champion-mastery\/v1\/local-player\/champion-mastery$/,
-  /^\/lol-match-history\/v1\/products\/lol\/current-summoner\/matches\?begIndex=\d{1,3}&endIndex=\d{1,3}$/, /^\/lol-match-history\/v1\/games\/\d{1,12}$/, /^\/riotclient\/region-locale$/];
+  /^\/lol-match-history\/v1\/products\/lol\/current-summoner\/matches\?begIndex=\d{1,3}&endIndex=\d{1,3}$/, /^\/lol-match-history\/v1\/games\/\d{1,12}$/, /^\/riotclient\/region-locale$/, /^\/lol-champ-select\/v1\/session$/];
 
 function creds() {
   return new Promise(ok => {
@@ -40,7 +40,15 @@ function game(g, me, detail) {
   const dur = g.gameDuration || detail.gameDuration || 0, early = !!(s.causedEarlySurrender || s.gameEndedInEarlySurrender);
   return { id: 'LCU_' + g.gameId, t: g.gameCreation, dur: dur > 3600 * 6 ? Math.round(dur / 1000) : dur, q: g.queueId, cid: p.championId, role: lane(p.timeline), win: !!s.win && !early, remake: early,
     k: s.kills || 0, d: s.deaths || 0, a: s.assists || 0, cs: (s.totalMinionsKilled || 0) + (s.neutralMinionsKilled || 0), vis: s.visionScore || 0, dmg: s.totalDamageDealtToChampions || 0, gold: s.goldEarned || 0,
-    kp: Math.round(((s.kills || 0) + (s.assists || 0)) / tk * 100), share: Math.round((s.totalDamageDealtToChampions || 0) / td * 100), ...extra(p, all) };
+    kp: Math.round(((s.kills || 0) + (s.assists || 0)) / tk * 100), share: Math.round((s.totalDamageDealtToChampions || 0) / td * 100), ...extra(p, all),
+    it: items(s), ks: s.perk0 || 0, pl: players(all, p, detail.participantIdentities || g.participantIdentities || []) };
+}
+// les objets d'un joueur, et les dix joueurs : [champion, 2 = toi / 1 = ton équipe / 0 = en face, K, D, A, sbires, dégâts, or, objets, nom]
+const items = s => [0, 1, 2, 3, 4, 5, 6].map(i => s['item' + i] || 0).filter(Boolean);
+function players(all, p, ids) {
+  if (all.length < 2) return undefined;
+  const name = x => { const pl = ids.find(i => i.participantId === x.participantId)?.player || {}; return pl.gameName || pl.summonerName || ''; };
+  return all.map(x => { const s = x.stats || {}; return [x.championId, x === p ? 2 : x.teamId === p.teamId ? 1 : 0, s.kills || 0, s.deaths || 0, s.assists || 0, (s.totalMinionsKilled || 0) + (s.neutralMinionsKilled || 0), s.totalDamageDealtToChampions || 0, s.goldEarned || 0, items(s), name(x)]; });
 }
 // le détail en plus : objectifs, multi-kills, vision, et l'adversaire direct de la même voie (si le client donne les dix joueurs)
 function extra(p, all) {
@@ -68,8 +76,23 @@ async function local(known) {
   return out;
 }
 
+// la sélection des champions en cours : ton champion (choisi ou survolé), ton poste, tes alliés et les champions d'en face déjà visibles.
+// Le port et le mot de passe du client sont gardés : relire la ligne de commande toutes les 5 s coûterait un PowerShell à chaque fois.
+let selCreds = null;
+async function select() {
+  for (let k = 0; k < 2; k++) {
+    selCreds ||= await creds(); if (!selCreds) return { off: 'client' };
+    try {
+      const s = await get(selCreds, '/lol-champ-select/v1/session'), me = (s.myTeam || []).find(x => x.cellId === s.localPlayerCellId) || {};
+      return { cid: me.championId || me.championPickIntent || 0, role: String(me.assignedPosition || '').toUpperCase(), allies: (s.myTeam || []).filter(x => x !== me).map(x => x.championId || x.championPickIntent || 0).filter(Boolean), enemies: (s.theirTeam || []).map(x => x.championId).filter(Boolean) };
+    } catch (e) { if (/client 404/.test(e.message)) return { off: 'none' }; selCreds = null; }
+  }
+  return { off: 'client' };
+}
+
 module.exports = ({ ipcMain }) => {
   ipcMain.handle('lol:local', (_, known) => local(Array.isArray(known) ? known.slice(0, 500).map(String) : []));
+  ipcMain.handle('lol:select', () => select());
   return () => {};
 };
 module.exports.game = game;  // pour les tests

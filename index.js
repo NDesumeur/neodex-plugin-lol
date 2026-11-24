@@ -101,6 +101,15 @@ export default async function (ctx) {
     .lol .kv{display:grid;grid-template-columns:1fr auto;gap:4px 14px;align-items:baseline;font-size:14px}
     .lol .kv b{font:13px var(--title,monospace);text-align:right} .lol .kv small{grid-column:1/-1;font-size:11px;color:var(--lilac,#c9bde6);margin:-2px 0 4px}
     .lol .kv small:empty{display:none}
+    .lol .sel{box-shadow:inset 0 0 0 2px var(--magenta,#e01ec8)} .lol .sel .head{gap:12px}
+    .lol .sel .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:10px}
+    .lol .items{display:flex;flex-wrap:wrap;gap:8px} .lol .item{display:flex;align-items:center;gap:8px;font-size:13px;min-width:200px}
+    .lol .item img,.lol .it{width:30px;height:30px;box-shadow:0 0 0 2px #000;background:#0d0820;display:inline-block;flex:none}
+    .lol .team{display:flex;flex-direction:column;gap:4px;flex-basis:100%} .lol .team h2{margin:6px 0 2px}
+    .lol .pl{display:grid;grid-template-columns:30px 1.3fr .9fr .6fr .8fr .7fr 2.2fr;gap:8px;align-items:center;font-size:13px;padding:3px 6px;background:#120a2a}
+    .lol .pl.me{box-shadow:inset 0 0 0 2px var(--magenta,#e01ec8)} .lol .pl .ic{width:30px;height:30px;font-size:11px} .lol .pl .its{display:flex;gap:3px} .lol .pl .its .it{width:24px;height:24px}
+    .lol .pl span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    @media (max-width:640px){.lol .pl{grid-template-columns:30px 1fr .9fr 1.6fr}.lol .pl>:nth-child(4),.lol .pl>:nth-child(5),.lol .pl>:nth-child(6){display:none}}
     @media (max-width:640px){.lol .line{grid-template-columns:40px 1fr 1fr 1fr}.lol .line>:nth-child(n+5){display:none}.lol .m{grid-template-columns:6px 40px 1fr 1fr}.lol .m>:nth-child(n+5){display:none}}`);
   const root = el('div', 'lol'); ctx.view.append(root);
 
@@ -121,13 +130,21 @@ export default async function (ctx) {
     return JSON.parse(r.body);
   }
   async function dragon() {  // les noms et les images des champions (Data Dragon, sans clé)
-    if (D.dd && Date.now() - D.dd.at < 6 * 864e5) return;
+    if (D.dd && D.dd.items && Date.now() - D.dd.at < 6 * 864e5) return;
     if (!await ensureNet()) throw new Error('Autorisation réseau refusée.');
     const v = JSON.parse((await net('https://ddragon.leagueoflegends.com/api/versions.json')).body)[0];
     const c = JSON.parse((await net('https://ddragon.leagueoflegends.com/cdn/' + v + '/data/fr_FR/champion.json')).body).data, byKey = {};
     for (const x of Object.values(c)) byKey[x.key] = {id: x.id, name: x.name};
-    D.dd = {v, byKey, at: Date.now()};
+    // les objets : [nom, prix total, bottes ?] ; les runes principales : [nom, image]
+    const items = {}, runes = {};
+    try { for (const [id, x] of Object.entries(JSON.parse((await net('https://ddragon.leagueoflegends.com/cdn/' + v + '/data/fr_FR/item.json')).body).data)) items[id] = [x.name, x.gold?.total || 0, (x.tags || []).includes('Boots') ? 1 : 0]; } catch {}
+    try { for (const st of JSON.parse((await net('https://ddragon.leagueoflegends.com/cdn/' + v + '/data/fr_FR/runesReforged.json')).body)) for (const r of st.slots[0].runes) runes[r.id] = [r.name, r.icon]; } catch {}
+    D.dd = {v, byKey, items, runes, at: Date.now()};
   }
+  const itemImg = id => D.dd ? 'https://ddragon.leagueoflegends.com/cdn/' + D.dd.v + '/img/item/' + id + '.png' : '';
+  const itemName = id => D.dd?.items?.[id]?.[0] || 'Objet ' + id;
+  const champOf = cid => D.dd?.byKey?.[cid]?.id || '';
+  const itemIcon = id => { const i = el('img', 'it'); i.src = itemImg(id); i.alt = ''; i.title = itemName(id); i.onerror = () => { i.style.visibility = 'hidden'; }; return i; };
   const champImg = id => D.dd ? 'https://ddragon.leagueoflegends.com/cdn/' + D.dd.v + '/img/champion/' + id + '.png' : '';
   const picture = (src, cls, fb) => {
     const box = el('div', cls); const fallback = () => { box.textContent = (fb || '?').slice(0, 1).toUpperCase(); };
@@ -141,8 +158,11 @@ export default async function (ctx) {
     const team = m.info.participants.filter(x => x.teamId === p.teamId), tk = team.reduce((a, x) => a + x.kills, 0) || 1, td = team.reduce((a, x) => a + x.totalDamageDealtToChampions, 0) || 1, dur = m.info.gameDuration;
     return {id: m.metadata.matchId, t: m.info.gameStartTimestamp, dur: dur > 3600 * 6 ? Math.round(dur / 1000) : dur, q: m.info.queueId, champ: p.championName, cid: p.championId, role: p.teamPosition || '', win: !!p.win && !p.gameEndedInEarlySurrender,
       remake: !!p.gameEndedInEarlySurrender, k: p.kills, d: p.deaths, a: p.assists, cs: p.totalMinionsKilled + p.neutralMinionsKilled, vis: p.visionScore, dmg: p.totalDamageDealtToChampions, gold: p.goldEarned, kp: Math.round((p.kills + p.assists) / tk * 100), share: Math.round(p.totalDamageDealtToChampions / td * 100),
-      ...extra(p, m.info.participants.find(x => x.teamId !== p.teamId && p.teamPosition && x.teamPosition === p.teamPosition))};
+      ...extra(p, m.info.participants.find(x => x.teamId !== p.teamId && p.teamPosition && x.teamPosition === p.teamPosition)),
+      it: its(p), ks: p.perks?.styles?.[0]?.selections?.[0]?.perk || 0,
+      pl: m.info.participants.map(x => [x.championId, x === p ? 2 : x.teamId === p.teamId ? 1 : 0, x.kills, x.deaths, x.assists, x.totalMinionsKilled + x.neutralMinionsKilled, x.totalDamageDealtToChampions, x.goldEarned, its(x), x.riotIdGameName || x.summonerName || ''])};
   };
+  const its = x => [0, 1, 2, 3, 4, 5, 6].map(i => x['item' + i] || 0).filter(Boolean);
   // le détail en plus (parties chargées depuis la version 1.4) : objectifs, multi-kills, vision, et l'adversaire direct de la même voie
   const extra = (p, o) => {
     const c = p.challenges || {}, cs = x => x.totalMinionsKilled + x.neutralMinionsKilled;
@@ -255,7 +275,7 @@ export default async function (ctx) {
       const t = el('div'); t.append(el('span', '', label), el('br'), el('b', '', rankName(r) + (r ? ' · ' + r.leaguePoints + ' LP' : '')), el('br'), el('span', r ? wrCls(pct(r.wins, r.wins + r.losses)) : '', r ? r.wins + ' V · ' + r.losses + ' D · ' + pct(r.wins, r.wins + r.losses) + ' %' : 'Pas de partie classée cette saison'));
       c.append(b, t); ranks.append(c);
     }
-    root.append(ranks);
+    root.append(ranks, selBox);
     const tabs = el('div', 'tabs');
     for (const [k, l] of [['apercu', 'APERÇU'], ['analyse', 'ANALYSE'], ['champions', 'CHAMPIONS'], ['historique', 'HISTORIQUE'], ['courbes', 'ÉVOLUTION']]) { const b = el('button', k === tab ? 'on' : 'q', l); b.onclick = () => { tab = k; draw(); }; tabs.append(b); }
     const sel = el('select'); for (const [k, [l]] of Object.entries(GROUPS)) { const o = el('option', '', l); o.value = k; sel.append(o); } sel.value = group; sel.onchange = () => { group = sel.value; draw(); }; tabs.append(sel);
@@ -264,6 +284,67 @@ export default async function (ctx) {
     if (!D.matches.length) { root.append(el('div', 'empty', busy ? '' : 'Aucune partie en mémoire : appuie sur ACTUALISER.')); return; }
     if (!ms.length) { root.append(el('div', 'empty', 'Aucune partie de ce type parmi les ' + D.matches.length + ' gardées. Charge-en plus avec « + DE PARTIES ».')); return; }
     ({apercu: tabOverview, analyse: tabAnalysis, champions: tabChampions, historique: tabHistory, courbes: tabCharts})[tab](ms, rs);
+  }
+  // ---- pendant la sélection des champions : lue toutes les 5 s dans le client League (sur ce PC, rien ne sort), seulement quand la page est à l'écran
+  let SEL = null; const selBox = el('div');
+  const selKey = s => JSON.stringify(s);
+  async function pollSel() {
+    if (!D.acct || !root.isConnected || document.visibilityState !== 'visible' || !root.offsetParent) return;
+    let s = null; try { s = await ctx.neo.pluginMain(ctx.id, 'lol:select'); } catch {}
+    const next = s && !s.off ? s : null; if (selKey(next) !== selKey(SEL)) { SEL = next; drawSel(); }
+  }
+  setInterval(pollSel, 5000);
+  // les conseils viennent de tes parties gardées (Riot ne publie pas de statistiques de builds) : tes objets, ta rune, tes résultats face à eux
+  function advise(s) {
+    const rs = real(D.matches), mine = rs.filter(m => m.cid === s.cid), wins = mine.filter(m => m.win), out = el('div', 'grid');
+    const box = (title, ...kids) => { const c = el('div'); c.append(el('h2', '', title), ...kids); out.append(c); };
+    if (mine.length) {
+      const kv = el('div', 'kv'); kv.append(el('span', '', 'Parties gardées'), el('b', '', String(mine.length)), el('span', '', 'Victoires'), el('b', wrCls(pct(wins.length, mine.length)), pct(wins.length, mine.length) + ' %'), el('span', '', 'KDA'), el('b', '', kdaOf(mine).toFixed(2)));
+      const role = s.role && mine.filter(m => m.role === s.role); if (role && role.length) kv.append(el('span', '', 'En ' + ROLES[s.role]), el('b', wrCls(pct(role.filter(m => m.win).length, role.length)), role.length + ' parties · ' + pct(role.filter(m => m.win).length, role.length) + ' %'));
+      box('TOI AVEC ' + champName(champOf(s.cid)).toUpperCase(), kv);
+      // les objets finis (2 200 or et plus, ou des bottes) que tu prends le plus, dans tes victoires s'il y en a assez
+      const base = (wins.length >= 3 ? wins : mine).filter(m => m.it), cnt = new Map();
+      for (const m of base) for (const id of new Set(m.it)) { const x = D.dd?.items?.[id]; if (!x || x[1] >= 2200 || (x[2] && x[1] >= 900)) cnt.set(id, (cnt.get(id) || 0) + 1); }
+      const top = [...cnt].sort((a, b) => b[1] - a[1]).slice(0, 6), list = el('div', 'items');
+      for (const [id, n] of top) { const r = el('div', 'item'); r.append(itemIcon(id), el('span', '', itemName(id) + ' · ' + n + ' / ' + base.length)); list.append(r); }
+      if (top.length) box(wins.length >= 3 ? 'TES OBJETS QUAND TU GAGNES' : 'TES OBJETS', list);
+      const ks = new Map(); for (const m of mine) if (m.ks) { const k = ks.get(m.ks) || []; k.push(m); ks.set(m.ks, k); }
+      const kl = el('div', 'kv'); for (const [id, l] of [...ks].sort((a, b) => b[1].length - a[1].length).slice(0, 3)) { const w = pct(l.filter(m => m.win).length, l.length); kl.append(el('span', '', D.dd?.runes?.[id]?.[0] || 'Rune ' + id), el('b', wrCls(w), l.length + ' parties · ' + w + ' %')); }
+      if (ks.size) box('TA RUNE PRINCIPALE', kl);
+    } else {
+      const by = new Map(); for (const m of rs) if (!s.role || m.role === s.role) by.set(m.cid, [...(by.get(m.cid) || []), m]);
+      const best = [...by].filter(([, l]) => l.length >= 3).map(([c, l]) => ({c, n: l.length, w: pct(l.filter(m => m.win).length, l.length)})).sort((a, b) => b.w - a.w).slice(0, 3), kv = el('div', 'kv');
+      for (const b of best) kv.append(el('span', '', champName(champOf(b.c))), el('b', wrCls(b.w), b.n + ' parties · ' + b.w + ' %'));
+      box(s.cid ? 'PAS ENCORE DE PARTIE AVEC ' + champName(champOf(s.cid)).toUpperCase() : 'CHOISIS TON CHAMPION', ...(best.length ? [el('p', 'hint', 'Tes meilleurs champions' + (s.role ? ' en ' + ROLES[s.role] : '') + ' :'), kv] : [el('p', 'hint', 'Pas assez de parties gardées pour un conseil.')]));
+    }
+    // face aux champions d'en face déjà choisis
+    if (s.enemies.length) {
+      const kv = el('div', 'kv');
+      for (const e of s.enemies) { const l = rs.filter(m => m.pl?.some(p => p[1] === 0 && p[0] === e)), w = pct(l.filter(m => m.win).length, l.length); kv.append(el('span', '', champName(champOf(e))), el('b', l.length ? wrCls(w) : '', l.length ? l.length + ' parties · ' + w + ' %' : 'jamais croisé')); }
+      box('FACE À EUX', kv);
+    }
+    return out;
+  }
+  function drawSel() {
+    selBox.replaceChildren(); if (!SEL) return;
+    const c = el('div', 'card sel'), h = el('div', 'head'), name = champName(champOf(SEL.cid));
+    h.append(picture(SEL.cid ? champImg(champOf(SEL.cid)) : '', 'ic', name), el('b', '', 'SÉLECTION EN COURS' + (SEL.cid ? ' · ' + name : '') + (SEL.role ? ' · ' + ROLES[SEL.role] : '')));
+    c.append(h, advise(SEL), el('p', 'hint', 'D\'après tes parties gardées : Riot ne publie pas de statistiques de builds.')); selBox.append(c);
+  }
+  root.__lol = {sel: s => { SEL = s; drawSel(); }};  // pour les tests
+  // ---- les dix joueurs d'une partie, en deux équipes
+  function teams(m) {
+    const box = el('div', 'team');
+    for (const [side, title] of [[1, m.win ? 'TON ÉQUIPE · VICTOIRE' : 'TON ÉQUIPE · DÉFAITE'], [0, m.win ? 'EN FACE · DÉFAITE' : 'EN FACE · VICTOIRE']]) {
+      box.append(el('h2', '', title));
+      for (const p of m.pl.filter(p => (p[1] ? 1 : 0) === side)) {
+        const [cid, me, k, d, a, cs, dmg, gold, it, nm] = p, r = el('div', 'pl' + (me === 2 ? ' me' : '')), ch = champOf(cid), its = el('span', 'its');
+        for (const id of it) its.append(itemIcon(id));
+        r.append(picture(champImg(ch), 'ic', ch), el('span', '', (nm || champName(ch)) + (nm ? ' · ' + champName(ch) : '')), el('span', '', k + ' / ' + d + ' / ' + a), el('span', '', cs + ' sb.'), el('span', '', dmg.toLocaleString('fr-FR') + ' dg.'), el('span', '', (gold / 1000).toFixed(1) + ' k or'), its);
+        box.append(r);
+      }
+    }
+    return box;
   }
   function drawLink() {
     const card = el('div', 'card'), f = el('div', 'form');
@@ -361,6 +442,8 @@ export default async function (ctx) {
         det.append(el('span', '', 'Subis : ' + m.taken.toLocaleString('fr-FR')), el('span', '', 'Balises : ' + m.wards + ' posées · ' + m.wk + ' détruites · ' + m.cw + ' de contrôle'),
           el('span', '', 'Tours : ' + m.towers + ' · dragons : ' + m.drakes + (m.barons ? ' · nashor : ' + m.barons : '')), el('span', '', 'Contrôle des foules : ' + m.cc + ' s'));
         if (mk) det.append(el('span', 'good', mk)); if (m.fb) det.append(el('span', 'good', 'Premier sang'));
+        if (m.it?.length) { const it = el('span', 'its'); it.style.display = 'flex'; it.style.gap = '4px'; for (const id of m.it) it.append(itemIcon(id)); det.append(it); }
+        if (m.pl) det.append(teams(m));
         if (m.vsCs != null) det.append(el('span', m.vsGold >= 0 ? 'good' : 'bad', 'Face à ' + champName(m.opp) + ' : ' + sign(m.vsCs) + ' sbires, ' + sign(m.vsGold) + ' or, ' + sign(m.vsDmg) + ' dégâts'));
       }
       r.onclick = () => { open = open === m.id ? null : m.id; det.style.display = open === m.id ? 'flex' : 'none'; };

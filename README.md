@@ -4,6 +4,10 @@ Le tableau de bord de ton compte League of Legends : profil, classement, champio
 
 *English version: [README.en.md](README.en.md)*
 
+## Conseils pendant la sélection, et les dix joueurs (nouveau en 1.5.0)
+
+Pendant la sélection des champions : tes résultats avec ton champion, tes objets quand tu gagnes, ta rune principale et tes résultats face à ceux d'en face (d'après tes parties). Dans l'historique, le détail montre tes objets et les dix joueurs avec leurs objets.
+
 ## Lier ton compte
 
 Deux façons, au choix :
@@ -18,7 +22,8 @@ Aucun mot de passe n'est jamais demandé. La clé ne part que vers l'API de Riot
 - **Aperçu** : ton classement Solo/Duo et Flex 5c5 (rang, LP, victoires et défaites), tes moyennes (KDA, sbires, vision et dégâts par minute, participation aux kills, durée), tes maîtrises de champions et tes dix dernières parties.
 - **Analyse** : tes séries en cours et les plus longues ; ton mental (victoires juste après une victoire, juste après une défaite, et dans les longues sessions) ; l'écart de sbires, d'or et de dégâts face à ton adversaire direct, et tes victoires quand tu finis devant ou derrière ; l'or par minute, les dégâts subis, le contrôle des foules, les balises, le premier sang, les tours, les dragons, les kills en solo et les multi-kills jusqu'aux pentas ; tes résultats par rôle, par heure, par jour et selon la durée ; tes morts, tes meilleurs champions et ceux à éviter, tes records. Des conseils apparaissent quand un chiffre cloche (par exemple : « une pause après une défaite peut valoir des LP »).
 - **Champions** : chaque champion joué avec ses parties, son taux de victoire et son KDA.
-- **Historique** : tes parties, filtrables par file (classées, normales, ARAM, Arena…). Clique une partie pour son détail : tous les chiffres de ta partie et l'adversaire de ta voie.
+- **Historique** : tes parties, filtrables par file (classées, normales, ARAM, Arena…). Clique une partie pour son détail : tous les chiffres de ta partie, tes objets, l'adversaire de ta voie et les dix joueurs (champion, KDA, sbires, dégâts, or et objets) en deux équipes.
+- **Sélection en cours** : pendant la sélection des champions, avec le client League ouvert, un cadre apparaît tout seul en haut : tes résultats avec le champion choisi (et à ton poste), les objets finis que tu prends le plus quand tu gagnes, ta rune principale la plus jouée et tes résultats face aux champions d'en face. Tout vient de tes parties gardées : Riot ne publie pas de statistiques de builds. Sans partie avec ce champion, il propose tes meilleurs champions du poste.
 - **Évolution** : des courbes de tes statistiques au fil des parties.
 
 ## Les parties gardées

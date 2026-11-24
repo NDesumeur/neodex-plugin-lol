@@ -4,6 +4,10 @@ The dashboard for your League of Legends account: profile, rank, champions and m
 
 *Version française : [README.md](README.md)*
 
+## Champion select advice, and all ten players (new in 1.5.0)
+
+During champion select: your results with your champion, your items when you win, your keystone and your results against the enemy picks (from your games). In the history, the detail shows your items and all ten players with their items.
+
 ## Linking your account
 
 Two ways, your choice:
@@ -18,7 +22,8 @@ No password is ever asked for. The key only goes to Riot's API. **Unlink** remov
 - **Overview**: your Solo/Duo and Flex 5v5 rank (tier, LP, wins and losses), your averages (KDA, CS, vision and damage per minute, kill participation, duration), your champion masteries and your last ten games.
 - **Analysis**: your current and longest streaks; your mental game (wins right after a win, right after a loss, and in long sessions); the CS, gold and damage gap against your direct opponent, and your wins when you finish ahead or behind; gold per minute, damage taken, crowd control, wards, first blood, towers, dragons, solo kills and multi-kills up to pentas; your results by role, by hour, by day and by game length; your deaths, best champions and those to avoid, and your records. Tips appear when a number looks off (for example: "a break after a loss can be worth LP").
 - **Champions**: each champion played with its games, win rate and KDA.
-- **History**: your games, filterable by queue (ranked, normal, ARAM, Arena…). Click a game for its details: all your numbers for that game and your lane opponent.
+- **History**: your games, filterable by queue (ranked, normal, ARAM, Arena…). Click a game for its details: all your numbers for that game and your lane opponent, with your items and all ten players (champion, KDA, CS, damage, gold and items) in two teams.
+- **Champion select**: during champion select, with the League client open, a box shows up at the top: your results with the picked champion (and in your role), the finished items you buy most when you win, your most played keystone, and your results against the enemy champions. Everything comes from your saved games: Riot does not publish build statistics. With no game on that champion, it suggests your best champions for the role.
 - **Progress**: charts of your statistics over your games.
 
 ## Saved games
